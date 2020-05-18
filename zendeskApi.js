@@ -1,7 +1,11 @@
-require('dotenv').config()
+require('dotenv').config();
 const axios = require('axios');
-const zendeskCredentials = require('./zendeskCredentials');
-const {objectTypeKey} = require('./createZendeskObjectType');
+const zendeskCredentials = {
+    url: process.env.ZENDESK_URL,
+    base64Basic: new Buffer.from(`${process.env.ZENDESK_EMAIL}/token:${process.env.ZENDESK_API_TOKEN}`).toString('base64')
+};
+    
+    
 
 const axiosConfigured = axios.create({
     baseURL: zendeskCredentials.url,
@@ -40,6 +44,16 @@ const deleteObjectRecord = function (zendeskId) {
     return axiosConfigured.delete(`/api/sunshine/objects/records/${zendeskId}`);
 };
 
+const getObjectRecords = function (type) {
+    console.log("Getting object records for type " + type);
+    return axiosConfigured.get(`/api/sunshine/objects/records?type=${type}`);
+};
+
+
+/*
+    Creates the object, if object with external_id doesn't already exist,
+    otherwise updates existing object.
+ */
 const setObjectRecordByExternalId = function (data) {
     return axiosConfigured.patch(`/api/sunshine/objects/records`, data, {
         headers: {'Content-Type':'application/merge-patch+json'}
@@ -50,6 +64,25 @@ const deleteObjectRecordByExternalId = function (clientId, key) {
     return axiosConfigured.delete(`/api/sunshine/objects/records?external_id=${clientId}&type=${key}`);
 };
 
+async function asyncForEach(array, callback) {
+    for (let index = 0; index < array.length; index++) {
+        await callback(array[index], index, array);
+    }
+}
+
+const deleteAllObjectRecordsByType = async function (key) {
+    let results = await axiosConfigured.get(`/api/sunshine/objects/records?type=${key}`);
+    if (results.data.data) {
+        let ids = results.data.data.reduce( (acc, curr) => {
+            acc.push(curr.id);
+            return acc;
+        }, []);
+        await asyncForEach(ids, async id => {
+            await axiosConfigured.delete(`/api/sunshine/objects/records/${id}`);
+        });
+    }
+};
+
 module.exports = {
     createType,
     deleteTypeByKey,
@@ -57,6 +90,8 @@ module.exports = {
     createObjectRecord,
     updateObjectRecord,
     deleteObjectRecord,
+    getObjectRecords,
     setObjectRecordByExternalId,
-    deleteObjectRecordByExternalId
+    deleteObjectRecordByExternalId,
+    deleteAllObjectRecordsByType
 };

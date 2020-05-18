@@ -1,6 +1,6 @@
 const api = require('./zendeskApi');
 
-const objectTypeKey = 'client3'
+const objectTypeKey = 'client2';
 
 const customObject = {
     "data": {
@@ -32,9 +32,6 @@ const createTypeIfNecessary = async function () {
             console.log("Creating object type.");
             response = await api.createType(customObject);
             console.log(response.status + ' ' + response.statusText);
-        }
-        else {
-            console.log("Already exists, doing nothing.");
         }
     }
     catch (error) {

@@ -6,14 +6,18 @@ keypress(process.stdin);
 const {createTypeIfNecessary, objectTypeKey} = require('./createZendeskObjectType');
 const api = require('./zendeskApi');
 
+// Load the Google Sheet ID from the .env file
 const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-
-// our naive data structure that we use to keep a local sync
+// Our naive data structure that we use to keep a local sync
 // between data in google doc and data in Zendesk
 let data = [];
 
+// This compares the google sheet to the data array using the ID
+// column as a unique identifier, and if any differences are found,
+// updates the data on Zendesk as required.
 async function diffData(newData) {
+
     // iterate through new data, check for new records and records
     // that need to be updated
     for( let clientId in newData) {
@@ -58,6 +62,7 @@ async function diffData(newData) {
     }
 }
 
+// Retrieves the data from the google sheet
 async function checkForChanges(auth) {
 
     const sheets = google.sheets({version: 'v4', auth});
@@ -77,7 +82,7 @@ async function checkForChanges(auth) {
             console.log("**********************************************");
             console.log(`Headers: ${columnHeaders.join(', ')}`);
             let newDataById = [];
-            rows.map((row, index) => {
+            rows.slice(1).map((row, index) => {
                 console.log(row.join(', '));
                 newDataById[row[0]] = row[1]; // Store client names by ID
             });
@@ -95,7 +100,19 @@ async function checkForChanges(auth) {
 
 }
 
+// Creates the Sunshine custom object type, if it hasn't already been
+// created, and then checks for updated data when user presses a key
 createTypeIfNecessary().then(async () => {
+
+    // load data into local cache
+    console.log("Loading data from Zendesk into local cache");
+    let results = await api.getObjectRecords(objectTypeKey);
+    if (results && results.data && results.data.data) {
+        results.data.data.forEach(record => {
+           data[record.attributes.id] = record.attributes.name;
+           console.log(`Record found: ${record.attributes.id} - ${record.attributes.name}`)
+        });
+    }
 
     googleHelper(checkForChanges);
 
@@ -115,7 +132,6 @@ createTypeIfNecessary().then(async () => {
     process.stdin.resume();
 
 });
-
 
 
 
