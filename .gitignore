@@ -117,3 +117,5 @@ dist
 
 credentials.json
 token.json
+
+.idea
