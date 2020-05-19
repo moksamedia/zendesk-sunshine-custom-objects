@@ -4,8 +4,6 @@ const zendeskCredentials = {
     url: process.env.ZENDESK_URL,
     base64Basic: new Buffer.from(`${process.env.ZENDESK_EMAIL}/token:${process.env.ZENDESK_API_TOKEN}`).toString('base64')
 };
-    
-    
 
 const axiosConfigured = axios.create({
     baseURL: zendeskCredentials.url,
