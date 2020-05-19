@@ -45,7 +45,6 @@ const deleteObjectRecord = function (zendeskId) {
 };
 
 const getObjectRecords = function (type) {
-    console.log("Getting object records for type " + type);
     return axiosConfigured.get(`/api/sunshine/objects/records?type=${type}`);
 };
 

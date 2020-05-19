@@ -13,6 +13,35 @@ const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 // between data in google doc and data in Zendesk
 let data = [];
 
+async function createOrUpdateRecord(clientId, clientName) {
+    let response = await api.setObjectRecordByExternalId({ data: {
+            type: objectTypeKey,
+            external_id: clientId,
+            attributes: {
+                id: clientId,
+                name: clientName
+            }
+        }});
+    console.log(response.status + ' ' + response.statusText);
+}
+
+async function createNewRecord(clientId, clientName) {
+    let response = await api.createObjectRecord({ data: {
+            type: objectTypeKey,
+            external_id: clientId,
+            attributes: {
+                id: clientId,
+                name: clientName
+            }
+        }});
+    console.log(response.status + ' ' + response.statusText);
+}
+
+async function deleteRecord(clientId) {
+    let response = await api.deleteObjectRecordByExternalId(clientId, objectTypeKey);
+    console.log(response.status + ' ' + response.statusText);
+}
+
 // This compares the google sheet to the data array using the ID
 // column as a unique identifier, and if any differences are found,
 // updates the data on Zendesk as required.
@@ -26,40 +55,24 @@ async function diffData(newData) {
             // new record, add
             console.log(`New record found: ${clientId} - ${clientName}`)
             data[clientId] = clientName;
-            let response = await api.setObjectRecordByExternalId({ data: {
-                type: objectTypeKey,
-                external_id: clientId,
-                attributes: {
-                    id: clientId,
-                    name: clientName
-                }
-            }});
-            console.log(response.status + ' ' + response.statusText);
+            await createNewRecord(clientId, clientName);
         }
         else if (data[clientId] !== clientName) {
             // need to update
             console.log(`Updating record: ${clientId} - ${data[clientId]} to ${clientName}`)
             data[clientId] = clientName;
-            let response = await api.setObjectRecordByExternalId({ data: {
-                type: objectTypeKey,
-                external_id: clientId,
-                attributes: {
-                    id: clientId,
-                    name: clientName
-                }
-            }});
-            console.log(response.status + ' ' + response.statusText);
-
+            await createOrUpdateRecord(clientId, clientName);
         }
     };
     // iterate through old data, looking for deleted records
     for (let clientId in data) {
         if (!newData[clientId]) {
             // record exists in old data but not new data, delete
-            console.log(`Deleting record: ${clientId} - ${data[clientId]}`)
-            await api.deleteObjectRecordByExternalId(clientId, objectTypeKey);
+            console.log(`Deleting record: ${clientId} - ${data[clientId]}`);
+            await deleteRecord(clientId);
         }
     }
+
 }
 
 // Retrieves the data from the google sheet
@@ -67,6 +80,7 @@ async function checkForChanges(auth) {
 
     const sheets = google.sheets({version: 'v4', auth});
 
+    console.log("Loading data from Google sheet")
     sheets.spreadsheets.values.get({
         spreadsheetId: spreadsheetId,
         range: 'A:C',
@@ -79,23 +93,19 @@ async function checkForChanges(auth) {
         else if (rows.length) {
             // Print columns A and E, which correspond to indices 0 and 4.
             const columnHeaders = rows[0];
-            console.log("**********************************************");
-            console.log(`Headers: ${columnHeaders.join(', ')}`);
+            console.log(`${columnHeaders.join(', ')}`);
             let newDataById = [];
             rows.slice(1).map((row, index) => {
                 console.log(row.join(', '));
                 newDataById[row[0]] = row[1]; // Store client names by ID
             });
-            console.log("**********************************************");
             try {
                 await diffData(newDataById);
             }
             catch (error) {
                 console.error(error.response);
             }
-            console.log("**********************************************");
         }
-        console.log("Press any key to check for new data. Control-C to exit.");
     });
 
 }
@@ -114,22 +124,7 @@ createTypeIfNecessary().then(async () => {
         });
     }
 
-    googleHelper(checkForChanges);
-
-    console.log("Press any key to check for new data. Control-C to exit.");
-
-    process.stdin.on('keypress', function (ch, key) {
-        if (key && key.ctrl && key.name == 'c') {
-            process.stdin.pause();
-        }
-        else {
-            console.log("Polling for data...");
-            googleHelper(checkForChanges);
-        }
-    });
-
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
+    googleHelper(checkForChanges)
 
 });
 
