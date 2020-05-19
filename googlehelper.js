@@ -13,7 +13,7 @@ const SCOPES = [
 // time.
 const TOKEN_PATH = 'token.json';
 
-module.exports = async function(workerCallback) {
+module.exports = function(workerCallback) {
 
     fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err);

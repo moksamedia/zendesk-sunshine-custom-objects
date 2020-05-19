@@ -1,6 +1,6 @@
 const api = require('./zendeskApi');
 
-const objectTypeKey = 'client2';
+const objectTypeKey = 'client';
 
 const customObject = {
     "data": {

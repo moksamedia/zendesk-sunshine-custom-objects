@@ -1,8 +1,6 @@
 require('dotenv').config()
 const {google} = require('googleapis');
 const googleHelper = require('./googlehelper');
-const keypress = require('keypress');
-keypress(process.stdin);
 const {createTypeIfNecessary, objectTypeKey} = require('./createZendeskObjectType');
 const api = require('./zendeskApi');
 
