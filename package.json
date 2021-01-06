@@ -5,7 +5,7 @@
   "author": "Andrew Hughes",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "dotenv": "^8.2.0",
     "googleapis": "^51.0.0",
     "keypress": "^0.2.1"
